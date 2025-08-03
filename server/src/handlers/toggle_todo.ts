@@ -1,16 +1,28 @@
 
+import { db } from '../db';
+import { todosTable } from '../db/schema';
 import { type ToggleTodoInput, type Todo } from '../schema';
+import { eq } from 'drizzle-orm';
 
 export const toggleTodo = async (input: ToggleTodoInput): Promise<Todo> => {
-    // This is a placeholder declaration! Real code should be implemented here.
-    // The goal of this handler is toggling the completed status of a todo item.
-    // This is a convenience method for marking todos as complete/incomplete.
-    return Promise.resolve({
-        id: input.id,
-        title: "Placeholder title",
-        description: null,
+  try {
+    // Update the todo's completed status and updated_at timestamp
+    const result = await db.update(todosTable)
+      .set({ 
         completed: input.completed,
-        created_at: new Date(),
         updated_at: new Date()
-    } as Todo);
+      })
+      .where(eq(todosTable.id, input.id))
+      .returning()
+      .execute();
+
+    if (result.length === 0) {
+      throw new Error(`Todo with id ${input.id} not found`);
+    }
+
+    return result[0];
+  } catch (error) {
+    console.error('Todo toggle failed:', error);
+    throw error;
+  }
 };
